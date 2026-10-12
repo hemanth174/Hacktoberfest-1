@@ -66,6 +66,7 @@ function publish(job, patch) {
         t: Date.now(),
         filename: job.data.filename || job.filename,
         pageUrl: job.data.page_url || job.pageUrl || "",
+        scanKind: job.data.scan_kind || job.scanKind || "apk",
         verdict: job.data.verdict || "unknown",
         score: job.data.risk_score ?? null,
         source: job.data.source || "background",
@@ -106,7 +107,7 @@ async function runUrlJob(job) {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || `Backend ${response.status}`);
-    publish(job, { status: "complete", detail: "Gemma report ready", data: { ...data, filename: job.filename, url: job.url } });
+    publish(job, { status: "complete", detail: "Gemma report ready", data: { ...data, filename: job.filename, url: job.url, scan_kind: "apk-url" } });
   } catch (error) {
     publish(job, { status: "error", detail: "Scan failed", error: error.name === "AbortError" ? "Scan timed out" : error.message });
   }
@@ -122,7 +123,7 @@ async function runFileJob(job) {
     const response = await request(`${await backendUrl()}/scan-file`, { method: "POST", body: form });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || `Backend ${response.status}`);
-    publish(job, { status: "complete", detail: "Gemma report ready", data: { ...data, filename: job.filename } });
+    publish(job, { status: "complete", detail: "Gemma report ready", data: { ...data, filename: job.filename, scan_kind: "apk-file" } });
   } catch (error) {
     publish(job, { status: "error", detail: "Scan failed", error: error.name === "AbortError" ? "Scan timed out" : error.message });
   }
@@ -138,7 +139,7 @@ async function runPageJob(job) {
     const response = await request(`${await backendUrl()}/scan-with-screenshot`, { method: "POST", body: form });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || `Backend ${response.status}`);
-    publish(job, { status: "complete", detail: "Gemma vision report ready", data: { ...data, filename: job.filename, page_url: job.pageUrl || "", url: job.url || "" } });
+    publish(job, { status: "complete", detail: "Gemma vision report ready", data: { ...data, filename: job.filename, page_url: job.pageUrl || "", url: job.url || "", scan_kind: "page" } });
   } catch (error) {
     publish(job, { status: "error", detail: "Page scan failed", error: error.name === "AbortError" ? "Scan timed out" : error.message });
   }
@@ -162,6 +163,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     url: msg.url || "",
     filename: msg.filename || "download.apk",
     pageUrl: msg.pageUrl || "",
+    scanKind: msg.type === "START_PAGE_SCAN" ? "page" : msg.type === "START_FILE_SCAN" ? "apk-file" : "apk-url",
     screenshot: msg.screenshot || "",
     fileBase64: msg.fileBase64 || "",
     status: "queued",

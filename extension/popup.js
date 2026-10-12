@@ -26,6 +26,10 @@ chrome.runtime.onMessage.addListener((message) => {
     return;
   }
   if (message.type !== "SCAN_PROGRESS") return;
+  handleScanProgress(message);
+});
+
+function handleScanProgress(message) {
   const pending = pendingJobs.get(message.jobId);
   const fallbackActivity = $("p-url")?.classList.contains("active") ? "urlActivity" : $("p-file")?.classList.contains("active") ? "fileActivity" : "pageActivity";
   if (message.detail) setActivity(pending?.activityId || fallbackActivity, message.detail);
@@ -41,7 +45,36 @@ chrome.runtime.onMessage.addListener((message) => {
     pending?.resolve(false);
     pendingJobs.delete(message.jobId);
   }
-});
+  if (message.status === "complete" || message.status === "error") {
+    if (pending?.pollTimer) clearInterval(pending.pollTimer);
+  }
+}
+
+function pollBackgroundJob(jobId) {
+  const pending = pendingJobs.get(jobId);
+  if (!pending) return;
+  pending.pollTimer = setInterval(() => {
+    chrome.runtime.sendMessage({ type: "GET_SCAN_JOB", jobId }, (job) => {
+      if (chrome.runtime.lastError || !job) return;
+      if (!pendingJobs.has(jobId)) {
+        clearInterval(pending.pollTimer);
+        return;
+      }
+      if (job.detail) setActivity(pending.activityId, job.detail);
+      if (job.status === "complete" || job.status === "error") {
+        clearInterval(pending.pollTimer);
+        handleScanProgress({
+          type: "SCAN_PROGRESS",
+          jobId,
+          status: job.status,
+          detail: job.detail,
+          error: job.error,
+          data: job.data,
+        });
+      }
+    });
+  }, 2000);
+}
 
 /* ---------- backend URL (synced) ---------- */
 function backendUrl() {
@@ -96,6 +129,19 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 180000) {
   try { return await fetch(url, { ...options, signal: controller.signal }); }
   finally { clearTimeout(timer); }
 }
+async function compactScreenshot(dataUrl) {
+  const image = new Image();
+  image.src = dataUrl;
+  await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; });
+  const maxWidth = 1024;
+  const scale = Math.min(1, maxWidth / image.naturalWidth);
+  if (scale === 1) return dataUrl;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+  canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/png");
+}
 function startBackgroundJob(type, payload, activityId) {
   return new Promise((resolve) => {
     chrome.runtime.sendMessage({ type, ...payload }, (response) => {
@@ -104,7 +150,8 @@ function startBackgroundJob(type, payload, activityId) {
         resolve(false);
         return;
       }
-      pendingJobs.set(response.jobId, { activityId, resolve });
+      pendingJobs.set(response.jobId, { activityId, resolve, pollTimer: null });
+      pollBackgroundJob(response.jobId);
     });
   });
 }
@@ -203,7 +250,7 @@ $("scanPageBtn").onclick = async () => {
   try {
     const tab = await activeTab();
     setActivity("pageActivity", "Capturing the visible page for Gemma 4 vision…");
-    const shot = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
+    const shot = await compactScreenshot(await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" }));
     const first = pageLinks[0];
     setActivity("pageActivity", first ? `Sending ${first.fileName} and the page screenshot to Gemma 4…` : "Sending the page screenshot to Gemma 4…");
     await startBackgroundJob("START_PAGE_SCAN", {
@@ -380,14 +427,16 @@ function getHistory() {
 }
 function saveHistory(data) {
   getHistory().then((h) => {
-    h.unshift({ t: Date.now(), filename: data.filename || "download.apk", pageUrl: data.page_url || "", verdict: data.verdict || "unknown", score: data.risk_score ?? null, source: data.source || "", model: data.model || "", data });
+    h.unshift({ t: Date.now(), filename: data.filename || "download.apk", pageUrl: data.page_url || "", scanKind: data.scan_kind || "apk", verdict: data.verdict || "unknown", score: data.risk_score ?? null, source: data.source || "", model: data.model || "", data });
     chrome.storage.local.set({ apkGuardHistory: h.slice(0, 6) });
     renderHistory();
   });
 }
 function historyLabel(item) {
-  if (item.filename !== "page-scan") return item.filename || "Scan result";
-  try { return new URL(item.pageUrl || item.data?.page_url).hostname || "Current website"; } catch { return "Current website"; }
+  const pageUrl = item.pageUrl || item.data?.page_url || "";
+  const isPage = item.scanKind === "page" || item.data?.scan_kind === "page" || item.filename === "page-scan" || (pageUrl && !item.data?.url);
+  if (!isPage) return item.filename || "Scan result";
+  try { return new URL(pageUrl).hostname || "Current website"; } catch { return "Current website"; }
 }
 async function renderHistory() {
   const h = await getHistory();
@@ -402,6 +451,19 @@ async function renderHistory() {
     b.onclick = () => { renderReport(item.data); openReport(); };
     b.dataset.i = i;
     $("history").appendChild(b);
+  });
+}
+function removeUnrecoverableLegacyHistory() {
+  getHistory().then((history) => {
+    const filtered = history.filter((item) => {
+      const hasPage = item.pageUrl || item.data?.page_url;
+      const generic = /^(download|download-now|page-scan)(-[\w]+)?\.apk$/i.test(item.filename || "") || item.filename === "page-scan";
+      return !(generic && !hasPage);
+    });
+    if (filtered.length !== history.length) {
+      chrome.storage.local.set({ apkGuardHistory: filtered });
+      renderHistory();
+    }
   });
 }
 
@@ -419,7 +481,7 @@ function catOf(s) {
 }
 
 function renderReport(d) {
-  $("repFile").textContent = d.filename === "page-scan" ? historyLabel({ filename: d.filename, data: d, pageUrl: d.page_url }) : (d.filename || "Scan result");
+  $("repFile").textContent = d.scan_kind === "page" || d.filename === "page-scan" ? historyLabel({ filename: d.filename, data: d, pageUrl: d.page_url, scanKind: d.scan_kind }) : (d.filename || "Scan result");
   const score = typeof d.risk_score === "number" ? d.risk_score : null;
   $("repScore").textContent = score ?? "–";
   const arc = $("scoreArc"), C = 2 * Math.PI * 27;
@@ -562,3 +624,4 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 });
 refreshActivePage();
 renderHistory();
+removeUnrecoverableLegacyHistory();

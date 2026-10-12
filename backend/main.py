@@ -1,8 +1,13 @@
 """APK Guard backend — FastAPI endpoints (Gemma 4 brain)."""
 import base64
+import asyncio
+import functools
+import logging
 import os
 import shutil
 import tempfile
+import time
+from concurrent.futures import ThreadPoolExecutor
 import httpx
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +17,50 @@ from analyzer import analyze_apk
 from llm_triage import triage, triage_with_screenshot, GEMMA_MODEL, GEMMA_MODE, GEMMA_LOCAL_MODEL
 
 app = FastAPI(title="APK Guard backend")
+logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"))
+logger = logging.getLogger("apk-guard")
+
+# Gemma inference is synchronous and memory-heavy. Keep it off FastAPI's event
+# loop and limit concurrent model calls so health checks and logs remain live.
+MODEL_POOL_SIZE = max(1, int(os.environ.get("GEMMA_POOL_SIZE", "1")))
+MODEL_POOL = ThreadPoolExecutor(max_workers=MODEL_POOL_SIZE, thread_name_prefix="gemma")
+MODEL_SLOTS = asyncio.Semaphore(MODEL_POOL_SIZE)
+MODEL_TIMEOUT = float(os.environ.get("GEMMA_TIMEOUT_SECONDS", "150"))
+
+
+@app.middleware("http")
+async def request_logging(request, call_next):
+    started = time.perf_counter()
+    logger.info("request.start method=%s path=%s", request.method, request.url.path)
+    try:
+        response = await call_next(request)
+        elapsed = time.perf_counter() - started
+        logger.info("request.end method=%s path=%s status=%s elapsed=%.1fs", request.method, request.url.path, response.status_code, elapsed)
+        return response
+    except Exception:
+        logger.exception("request.error method=%s path=%s", request.method, request.url.path)
+        raise
+
+
+async def run_model(fn, *args):
+    """Run blocking Gemma/Ollama work in a bounded pool."""
+    async with MODEL_SLOTS:
+        logger.info("gemma.start function=%s pool=%s", fn.__name__, MODEL_POOL_SIZE)
+        started = time.perf_counter()
+        loop = asyncio.get_running_loop()
+        try:
+            result = await asyncio.wait_for(
+                loop.run_in_executor(MODEL_POOL, functools.partial(fn, *args)),
+                timeout=MODEL_TIMEOUT,
+            )
+            logger.info("gemma.end function=%s elapsed=%.1fs", fn.__name__, time.perf_counter() - started)
+            return result
+        except asyncio.TimeoutError:
+            logger.error("gemma.timeout function=%s after=%.1fs", fn.__name__, MODEL_TIMEOUT)
+            raise
+        except Exception:
+            logger.exception("gemma.error function=%s", fn.__name__)
+            raise
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
@@ -43,7 +92,7 @@ async def scan_url(req: ScanUrlReq):
             with open(apk_path, "wb") as f:
                 f.write(r.content)
         findings = analyze_apk(apk_path, url_context={"url": req.url, "page_url": req.page_url, "filename": req.filename})
-        report = triage(findings)
+        report = await run_model(triage, findings)
         report["filename"] = req.filename
         report.setdefault("source", "backend")
         return report
@@ -67,7 +116,7 @@ async def scan_file(file: UploadFile = File(...)):
         with open(apk_path, "wb") as f:
             f.write(await file.read())
         findings = analyze_apk(apk_path, url_context={"filename": file.filename})
-        report = triage(findings)
+        report = await run_model(triage, findings)
         report["filename"] = file.filename
         report.setdefault("source", "backend")
         return report
@@ -112,8 +161,9 @@ async def scan_with_screenshot(
                         "combo_flags": [], "impersonation": [], "url_flags": [f"Page: {page_url or url}"],
                         "risk_score": 20, "engine": "page-only", "url_context": {"page_url": page_url or url}}
         png = screenshot_b64.split(",", 1)[-1] if screenshot_b64 else ""
-        report = triage_with_screenshot(findings, base64.b64decode(png), page_url or url) if png \
-            else triage(findings)
+        report = await run_model(
+            triage_with_screenshot, findings, base64.b64decode(png), page_url or url
+        ) if png else await run_model(triage, findings)
         report["filename"] = filename
         report["page_url"] = page_url or url
         return report

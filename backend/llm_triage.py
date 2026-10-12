@@ -105,6 +105,12 @@ def _local_gemma_generate(system_text: str, prompt_text: str, image_b64: str | N
             "messages": [{"role": "system", "content": system_text}, user_msg],
             "stream": False,
             "format": "json",
+            # Structured security reports need a prompt answer, not an
+            # unbounded hidden reasoning trace. Progress is shown by the API
+            # stages in main.py instead.
+            "think": False,
+            "keep_alive": "10m",
+            "options": {"temperature": 0.1, "num_predict": 256, "num_ctx": 4096},
         }).encode()
         req = urllib.request.Request(OLLAMA_HOST.rstrip("/") + "/api/chat",
                                      data=body, headers={"Content-Type": "application/json"})

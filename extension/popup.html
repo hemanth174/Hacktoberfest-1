@@ -14,9 +14,9 @@
   *{box-sizing:border-box}
    html, body{scrollbar-width:none;-ms-overflow-style:none}
    html::-webkit-scrollbar,body::-webkit-scrollbar,main::-webkit-scrollbar{display:none;width:0;height:0}
-   body{width:372px;margin:0;background:var(--bg);color:var(--ink);
-    font:13px/1.5 -apple-system,"Segoe UI",Inter,system-ui,sans-serif;
-    -webkit-font-smoothing:antialiased}
+   body{width:100%;min-width:320px;min-height:100vh;margin:0;background:var(--bg);color:var(--ink);
+     font:13px/1.5 -apple-system,"Segoe UI",Inter,system-ui,sans-serif;
+     -webkit-font-smoothing:antialiased}
   button{font:inherit;color:inherit}
   :focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
   svg.ic{width:15px;height:15px;flex-shrink:0;stroke:currentColor;fill:none;
@@ -55,7 +55,10 @@
     box-shadow:0 1px 4px rgba(14,26,56,.12)}
   .tabs svg.ic{width:13px;height:13px}
 
-  main{padding:11px 12px 12px;max-height:430px;overflow-y:auto}
+   #view-main,#view-report{min-height:100vh;flex-direction:column}
+   #view-main{display:flex}
+   #view-report.open{display:flex}
+   main{flex:1;padding:11px 16px 12px;max-height:none;overflow-y:auto}
   .pane{display:none}
   .pane.active{display:block}
 
