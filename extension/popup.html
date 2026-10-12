@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root{
+    --ink:#0e1a38; --mut:#5c6b8a; --faint:#8b96b0;
+    --line:#e4e8f1; --soft:#f4f6fb; --bg:#ffffff;
+    --blue:#2b67f6; --blue-dark:#1e4fd6; --violet:#7c5cff;
+    --red:#d92d20; --red-soft:#fef1f0; --amber:#b54708; --amber-soft:#fef6e7;
+    --green:#12805c; --green-soft:#e9f7f0;
+    --r:10px;
+  }
+  *{box-sizing:border-box}
+   html, body{scrollbar-width:none;-ms-overflow-style:none}
+   html::-webkit-scrollbar,body::-webkit-scrollbar,main::-webkit-scrollbar{display:none;width:0;height:0}
+   body{width:372px;margin:0;background:var(--bg);color:var(--ink);
+    font:13px/1.5 -apple-system,"Segoe UI",Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  button{font:inherit;color:inherit}
+  :focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
+  svg.ic{width:15px;height:15px;flex-shrink:0;stroke:currentColor;fill:none;
+    stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:center;gap:9px;padding:11px 14px 10px;
+    border-bottom:1px solid var(--line)}
+  .logo{width:30px;height:30px;border-radius:9px;background:#eaf1fe;color:var(--blue);
+    display:flex;align-items:center;justify-content:center}
+  .logo svg.ic{width:17px;height:17px}
+  .titles{flex:1;min-width:0}
+  .titles h1{margin:0;font-size:13.5px;font-weight:700;letter-spacing:-.1px}
+  .titles p{margin:0;font-size:11px;color:var(--mut)}
+  .badge{font-size:9.5px;font-weight:700;letter-spacing:.5px;color:var(--blue);
+    background:#eaf1fe;border:1px solid #d3e2fd;border-radius:999px;padding:2px 8px;white-space:nowrap}
+  .iconbtn{width:28px;height:28px;border-radius:8px;border:1px solid transparent;background:none;
+    color:var(--mut);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .iconbtn:hover{background:var(--soft);color:var(--ink)}
+  .settings{display:none;gap:7px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--line);
+    background:var(--soft);font-size:11.5px;color:var(--mut)}
+  .settings.open{display:flex}
+  .settings input{flex:1;font-size:11.5px;padding:6px 9px;border:1px solid var(--line);
+    border-radius:8px;color:var(--ink);background:#fff;min-width:0}
+  .settings-toggle{display:flex;align-items:center;gap:5px;white-space:nowrap;color:var(--ink);font-size:11px}
+  .settings-toggle input{width:auto;flex:none}
+
+  /* ---------- tabs ---------- */
+  .tabs{display:flex;gap:2px;margin:10px 12px 0;padding:3px;background:var(--soft);
+    border-radius:11px}
+  .tabs button{flex:1;border:none;background:none;border-radius:8px;padding:7px 4px;
+    font-size:12px;font-weight:600;color:var(--mut);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:5px}
+  .tabs button:hover{color:var(--ink)}
+  .tabs button[aria-selected="true"]{background:#fff;color:var(--ink);
+    box-shadow:0 1px 4px rgba(14,26,56,.12)}
+  .tabs svg.ic{width:13px;height:13px}
+
+  main{padding:11px 12px 12px;max-height:430px;overflow-y:auto}
+  .pane{display:none}
+  .pane.active{display:block}
+
+  /* ---------- shared ---------- */
+  .card{border:1px solid var(--line);border-radius:var(--r);padding:10px 11px;background:#fff}
+  .card + .card{margin-top:8px}
+  .rowline{display:flex;align-items:center;gap:8px}
+  .muted{color:var(--mut)} .small{font-size:11.5px} .tiny{font-size:10.5px;color:var(--faint)}
+  .grow{flex:1;min-width:0} .ellipsis{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
+    border:none;border-radius:9px;padding:9px;font-size:12.5px;font-weight:650;cursor:pointer}
+  .btn-primary{background:var(--blue);color:#fff}
+  .btn-primary:hover:not(:disabled){background:var(--blue-dark)}
+  .btn-secondary{background:var(--soft);color:var(--ink);border:1px solid var(--line)}
+  .btn-secondary:hover:not(:disabled){background:#eceff7}
+  .btn:disabled{opacity:.55;cursor:not-allowed}
+  .btn svg.ic{width:14px;height:14px}
+  .spinner{width:14px;height:14px;border-radius:50%;flex-shrink:0;
+    border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .7s linear infinite}
+  .spinner.dark{border-color:rgba(14,26,56,.2);border-top-color:var(--ink)}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  input[type=text]{width:100%;padding:8px 10px;font-size:12.5px;color:var(--ink);
+    border:1px solid var(--line);border-radius:9px;background:#fff}
+  input[type=text]::placeholder{color:var(--faint)}
+  .pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;
+    border-radius:999px;padding:2px 9px;white-space:nowrap}
+  .pill.high{background:var(--red-soft);color:var(--red)}
+  .pill.medium{background:var(--amber-soft);color:var(--amber)}
+  .pill.low{background:var(--green-soft);color:var(--green)}
+  .pill.na{background:var(--soft);color:var(--mut)}
+  .stat-ok{color:var(--green)} .stat-bad{color:var(--red)} .stat-warn{color:var(--amber)}
+  .errbox{display:flex;gap:8px;border:1px solid #f5c6c2;background:var(--red-soft);
+    color:#7a271a;border-radius:var(--r);padding:9px 10px;font-size:12px}
+  .infobox{display:flex;gap:8px;border:1px solid var(--line);background:var(--soft);
+    color:var(--mut);border-radius:var(--r);padding:9px 10px;font-size:12px}
+  .kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:12px;
+    border-bottom:1px solid var(--soft)}
+  .kv:last-child{border-bottom:none}
+  .kv .k{color:var(--mut);flex-shrink:0}
+  .kv .v{text-align:right;word-break:break-all}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px}
+  details.ev{border-top:1px solid var(--soft);font-size:12px}
+  details.ev summary{cursor:pointer;padding:7px 0;color:var(--mut);font-size:11.5px;list-style:none;
+    display:flex;align-items:center;gap:5px}
+  details.ev summary::-webkit-details-marker{display:none}
+  details.ev summary:hover{color:var(--ink)}
+  details.ev .evbody{padding:0 0 8px;color:var(--mut);font-size:11.5px}
+  .linkbtn{background:none;border:none;color:var(--blue);font-size:12px;font-weight:600;
+    cursor:pointer;padding:6px 0 0;display:inline-flex;align-items:center;gap:4px}
+  .linkbtn:hover{text-decoration:underline}
+
+  /* ---------- findings ---------- */
+  .finding{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--soft);font-size:12px}
+  .finding:last-child{border-bottom:none}
+  .sev{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+  .sev.high{background:var(--red)} .sev.medium{background:#e8820c} .sev.info{background:#b6bfd2}
+  .finding p{margin:0}
+  .finding details{margin-top:2px}
+  .grp{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+    color:var(--faint);margin:10px 0 2px}
+
+  /* ---------- page rows ---------- */
+  .prow{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--soft)}
+  .prow:last-child{border-bottom:none}
+  .prow .nm{font-size:12px;font-weight:600}
+  .prow button{margin-left:auto;flex-shrink:0;border:1px solid var(--line);background:#fff;
+    border-radius:7px;font-size:11px;font-weight:650;padding:4px 11px;cursor:pointer}
+  .prow button:hover:not(:disabled){background:var(--soft)}
+  .prow button:disabled{opacity:.5;cursor:wait}
+
+  /* ---------- upload ---------- */
+  .drop{border:1.5px dashed #c4cddd;border-radius:var(--r);padding:20px 12px;text-align:center;
+    color:var(--mut);cursor:pointer;background:#fbfcff;transition:border-color .15s,background .15s}
+  .drop:hover,.drop.over{border-color:var(--blue);background:#f3f7ff}
+  .drop svg.ic{width:22px;height:22px;color:var(--faint)}
+  .drop p{margin:7px 0 0;font-size:12px}
+  .drop .tiny{display:block;margin-top:2px}
+  .filechip{display:flex;align-items:center;gap:9px;border:1px solid var(--line);
+    border-radius:var(--r);padding:8px 10px}
+  .filechip .fi{width:30px;height:30px;border-radius:8px;background:var(--soft);color:var(--mut);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .hist{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--soft);
+    font-size:12px;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+  .hist:last-child{border-bottom:none}
+  .hist:hover .hn{color:var(--blue)}
+  .progress{height:4px;border-radius:99px;background:var(--soft);overflow:hidden;margin-top:8px;display:none}
+  .progress.on{display:block}
+  .progress i{display:block;height:100%;width:40%;border-radius:99px;background:var(--blue);
+    animation:slide 1.1s ease-in-out infinite}
+  @keyframes slide{0%{margin-left:-40%}100%{margin-left:100%}}
+  .activity{display:flex;align-items:center;gap:7px;margin-top:8px;padding:8px 9px;border:1px solid var(--line);border-radius:8px;background:var(--soft);font-size:11.5px;color:var(--mut)}
+  .activity.done{color:var(--green);background:var(--green-soft)}
+  .activity.error{color:var(--red);background:var(--red-soft)}
+
+  /* ---------- report view ---------- */
+  #view-report{display:none}
+  #view-report.open{display:block}
+  #view-main.hidden{display:none}
+  .rephead{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .rephead .t{font-size:12.5px;font-weight:700}
+  .score{display:flex;align-items:center;gap:13px;padding:4px 0 2px}
+  .score .num{font-size:26px;font-weight:750;letter-spacing:-.5px}
+  .score .cap{font-size:11px;color:var(--mut)}
+  footer{display:flex;align-items:center;gap:6px;padding:8px 14px;border-top:1px solid var(--line);
+    font-size:10.5px;color:var(--faint)}
+  footer .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+</style>
+</head>
+<body>
+<div id="view-main">
+  <header>
+    <span class="logo" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+    <div class="titles"><h1>APK Guard</h1><p>Check before you install.</p></div>
+    <span class="badge">GEMMA 4 · LOCAL</span>
+    <button class="iconbtn" id="settingsBtn" aria-label="Settings" title="Backend settings"><svg class="ic" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+  </header>
+  <div class="settings" id="settingsRow">
+    <span>Backend</span>
+    <input id="backend" type="text" value="http://localhost:8000" aria-label="Backend URL" spellcheck="false">
+    <label class="settings-toggle" title="Show the page scan bar automatically"><input id="autoScan" type="checkbox" checked> Auto</label>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="Scan modes">
+    <button id="t-page" role="tab" aria-selected="true" aria-controls="p-page"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>This Page</button>
+    <button id="t-url" role="tab" aria-selected="false" aria-controls="p-url"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Paste URL</button>
+    <button id="t-file" role="tab" aria-selected="false" aria-controls="p-file"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>Upload APK</button>
+  </div>
+
+  <main>
+    <section id="p-page" class="pane active" role="tabpanel" aria-labelledby="t-page">
+      <div class="card">
+        <div class="rowline">
+          <svg class="ic muted" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
+          <span class="grow ellipsis small" id="pageDomain" style="font-weight:600">…</span>
+          <span class="pill na" id="pageCount">0 files</span>
+        </div>
+        <div id="pageStatus" style="margin-top:9px"></div>
+        <div id="pageFindings"></div>
+        <button class="linkbtn" id="pageDetailsToggle" style="display:none">View details
+          <svg class="ic" viewBox="0 0 24 24" style="width:12px;height:12px"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div id="pageDetails" style="display:none;margin-top:4px"></div>
+      </div>
+      <div style="margin-top:8px"><button class="btn btn-secondary" id="scanPageBtn"><svg class="ic" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Scan page</button></div>
+      <div id="pageActivity" class="activity" hidden></div>
+      <p class="tiny" style="margin:7px 2px 0">Screenshot + detected files are judged together by Gemma 4 vision.</p>
+    </section>
+
+    <section id="p-url" class="pane" role="tabpanel" aria-labelledby="t-url">
+      <div class="card">
+        <div style="display:flex;gap:7px">
+          <input id="url" type="text" placeholder="https://example.com/app.apk" aria-label="APK URL" spellcheck="false" inputmode="url">
+        </div>
+        <div style="margin-top:8px"><button class="btn btn-primary" id="scanUrlBtn"><svg class="ic" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" x2="17" y1="12" y2="12"/></svg>Analyze URL</button></div>
+      </div>
+      <div id="urlProbe" style="margin-top:8px"></div>
+      <div id="urlActivity" class="activity" hidden></div>
+    </section>
+
+    <section id="p-file" class="pane" role="tabpanel" aria-labelledby="t-file">
+      <div class="drop" id="drop" role="button" tabindex="0" aria-label="Choose an APK file">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+        <p><strong>Drop an .apk here</strong> or click to browse</p>
+        <span class="tiny">APK files only · sent to your local backend for analysis</span>
+        <input id="file" type="file" accept=".apk" hidden>
+      </div>
+      <div id="fileChip" style="display:none;margin-top:8px"></div>
+      <div style="margin-top:8px"><button class="btn btn-primary" id="scanFileBtn" disabled>Analyze APK</button></div>
+      <div class="progress" id="fileProg"><i></i></div>
+      <div id="fileActivity" class="activity" hidden></div>
+      <div class="card" style="margin-top:8px">
+        <div class="rowline small" style="font-weight:700"><svg class="ic muted" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Recent scans</div>
+        <div id="history"><p class="tiny" style="margin:6px 0 0">No scans yet.</p></div>
+      </div>
+      <p class="tiny" style="margin:7px 2px 0">Static analysis runs on your machine (localhost backend). The summary is written by Gemma 4, running locally via Ollama.</p>
+    </section>
+  </main>
+  <footer><span class="dot"></span><span id="footStat">Backend http://localhost:8000</span></footer>
+</div>
+
+<div id="view-report">
+  <header>
+    <button class="iconbtn" id="backBtn" aria-label="Back"><svg class="ic" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+    <div class="titles"><h1>Scan report</h1><p id="repFile">—</p></div>
+  </header>
+  <main>
+    <div class="card">
+      <div class="score">
+        <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
+          <defs><linearGradient id="aggrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#2b67f6"/><stop offset="1" stop-color="#7c5cff"/>
+          </linearGradient></defs>
+          <circle cx="32" cy="32" r="27" fill="none" stroke="#edf0f7" stroke-width="7"/>
+          <circle id="scoreArc" cx="32" cy="32" r="27" fill="none" stroke="url(#aggrad)"
+            stroke-width="7" stroke-linecap="round" transform="rotate(-90 32 32)"/>
+        </svg>
+        <div><div class="num" id="repScore">–</div>
+        <div class="cap">Risk score · heuristic, not a safety guarantee</div></div>
+        <span class="pill na" id="repLevel" style="margin-left:auto">—</span>
+      </div>
+      <p class="small" id="repSummary" style="margin:9px 0 0"></p>
+    </div>
+    <div class="card"><div class="rowline small" style="font-weight:700">Findings</div><div id="repFindings"></div></div>
+    <div class="card"><div class="rowline small" style="font-weight:700">Technical details</div><div id="repTech" style="margin-top:4px"></div></div>
+    <div class="card"><div class="rowline small" style="font-weight:700">Evidence</div><div id="repEvidence"></div></div>
+    <div style="margin-top:8px;display:flex;gap:8px">
+      <button class="btn btn-secondary" id="dlReportBtn" style="flex:1"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>Download report (.txt)</button>
+    </div>
+    <p class="tiny" id="repSource" style="margin:7px 2px 0"></p>
+    <div id="repWebReview" style="margin:5px 2px 0"></div>
+  </main>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>

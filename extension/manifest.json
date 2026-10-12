@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "APK Guard — Scan Before You Install",
+  "version": "0.2.1",
+  "description": "Spots APK links, shows inline risk badges, and scans before you install.",
+  "action": {},
+  "side_panel": {
+    "default_path": "popup.html"
+  },
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["activeTab", "scripting", "storage", "contextMenus", "sidePanel"],
+  "host_permissions": ["<all_urls>", "http://localhost:8000/*", "http://127.0.0.1:8000/*"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["report-ui.js", "content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

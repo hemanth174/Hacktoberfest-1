@@ -1,0 +1,176 @@
+/* APK Guard — glassmorphism UI layer (injected into pages) */
+.apk-guard-glass {
+  background: rgba(255, 255, 255, 0.68);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 12px 40px rgba(20, 30, 70, 0.22), inset 0 1px 0 rgba(255,255,255,.7);
+  border-radius: 18px;
+  color: #17233f;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+/* ---------- inline badges next to APK links ---------- */
+.apk-guard-wrap { display: inline-flex; gap: 6px; align-items: center; margin-left: 8px; vertical-align: middle; }
+.apk-guard-page-bar { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2147483647; display: flex; align-items: center; gap: 9px; padding: 8px 10px; max-width: min(720px, calc(100vw - 24px)); white-space: nowrap; font: 12px/1.2 "Segoe UI", system-ui, sans-serif; }
+.apk-guard-page-bar-brand { font-weight: 800; color: #17233f; }
+.apk-guard-page-bar-domain { max-width: 180px; overflow: hidden; text-overflow: ellipsis; color: #5f6b84; }
+.apk-guard-page-bar-status { color: #17233f; font-weight: 650; }
+.apk-guard-page-bar-legal { color: #6f7b91; }
+.apk-guard-page-bar-scan { border: 0; border-radius: 7px; padding: 6px 11px; background: #2b67f6; color: #fff; font: 650 11px system-ui; cursor: pointer; }
+.apk-guard-page-bar-scan:disabled { opacity: .65; cursor: wait; }
+.apk-guard-page-bar-close { border: 0; background: transparent; color: #768198; font-size: 17px; line-height: 1; cursor: pointer; padding: 0 2px; }
+@media (max-width: 620px) { .apk-guard-page-bar-legal { display: none; } .apk-guard-page-bar-domain { max-width: 110px; } }
+.apk-guard-badge {
+  font: 600 11px/1.5 "Segoe UI", system-ui, sans-serif;
+  padding: 3px 11px; border-radius: 999px; white-space: nowrap;
+  background: rgba(255,255,255,.6); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.7); box-shadow: 0 2px 10px rgba(20,30,70,.12);
+}
+.apk-guard-high { color: #b3261e; border-left: 4px solid #d93025; }
+.apk-guard-medium { color: #8a5400; border-left: 4px solid #e8710a; }
+.apk-guard-low { color: #146c2e; border-left: 4px solid #0f9d58; }
+.apk-guard-scan-btn {
+  font: 700 11px "Segoe UI", system-ui; padding: 5px 13px; border-radius: 999px; border: none;
+  background: linear-gradient(135deg, #1a73e8, #7b5cff); color: #fff; cursor: pointer;
+  box-shadow: 0 3px 12px rgba(60, 80, 220, .35); transition: transform .15s, box-shadow .15s;
+}
+.apk-guard-scan-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(60,80,220,.45); }
+.apk-guard-dismiss-btn {
+  font: 600 11px "Segoe UI", system-ui; padding: 5px 13px; border-radius: 999px;
+  border: 1px solid rgba(20,30,70,.18); background: rgba(255,255,255,.55); cursor: pointer; color: #3c4043;
+}
+
+/* ---------- floating shield button ---------- */
+.apk-guard-fab {
+  position: fixed; left: 18px; bottom: 18px; z-index: 2147483647;
+  width: 52px; height: 52px; border-radius: 50%; border: 1px solid rgba(255,255,255,.7);
+  background: linear-gradient(135deg, rgba(26,115,232,.92), rgba(123,92,255,.92));
+  color: #fff; font-size: 24px; cursor: pointer;
+  box-shadow: 0 10px 30px rgba(60,80,220,.45); transition: transform .15s;
+}
+.apk-guard-fab:hover { transform: scale(1.07); }
+.apk-guard-fab .apk-guard-fab-n {
+  position: absolute; top: -5px; right: -5px; min-width: 20px; height: 20px; border-radius: 999px;
+  background: #d93025; color: #fff; font: 700 11px/20px "Segoe UI", system-ui; text-align: center; padding: 0 4px;
+}
+
+/* ---------- auto page-summary panel ---------- */
+.apk-guard-panel {
+  position: fixed; top: 16px; right: 16px; z-index: 2147483647; width: 340px; max-height: 70vh;
+  display: flex; flex-direction: column; padding: 14px 14px 12px;
+  animation: apk-slide-in .35s cubic-bezier(.2,.9,.3,1.2);
+}
+@keyframes apk-slide-in { from { opacity: 0; transform: translateX(30px); } }
+.apk-guard-panel-head { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; }
+.apk-guard-panel-head .apk-guard-count {
+  font-size: 11px; font-weight: 700; background: linear-gradient(135deg,#1a73e8,#7b5cff);
+  color: #fff; border-radius: 999px; padding: 2px 10px;
+}
+.apk-guard-panel-head .apk-guard-x { margin-left: auto; border: none; background: rgba(20,30,70,.07);
+  width: 24px; height: 24px; border-radius: 50%; cursor: pointer; color: #5f6368; font-size: 12px; }
+.apk-guard-panel-sub { font-size: 11.5px; color: #5f6368; margin: 5px 0 9px; }
+.apk-guard-prows { overflow-y: auto; display: flex; flex-direction: column; gap: 7px; }
+.apk-guard-prow {
+  display: flex; align-items: center; gap: 8px; padding: 8px 9px; border-radius: 13px;
+  background: rgba(255,255,255,.55); border: 1px solid rgba(255,255,255,.6);
+}
+.apk-guard-prow .apk-guard-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.apk-guard-dot.high { background: #d93025; box-shadow: 0 0 8px #d93025; }
+.apk-guard-dot.medium { background: #e8710a; box-shadow: 0 0 8px #e8710a; }
+.apk-guard-dot.low { background: #0f9d58; box-shadow: 0 0 8px #0f9d58; }
+.apk-guard-prow .apk-guard-pmeta { flex: 1; min-width: 0; }
+.apk-guard-prow .apk-guard-fname { font-size: 12px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.apk-guard-prow .apk-guard-why { font-size: 10.5px; color: #5f6368; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.apk-guard-prow .apk-guard-pscore { font-size: 11px; font-weight: 800; background: rgba(20,30,70,.07);
+  border-radius: 999px; padding: 2px 8px; }
+.apk-guard-prow .apk-guard-vstat { font-size: 12px; font-weight: 800; }
+.apk-guard-prow .apk-guard-mini-scan {
+  font: 700 10.5px "Segoe UI", system-ui; border: none; border-radius: 999px; padding: 4px 11px;
+  background: linear-gradient(135deg,#1a73e8,#7b5cff); color: #fff; cursor: pointer; flex-shrink: 0;
+}
+.apk-guard-scan-all {
+  margin-top: 10px; border: none; border-radius: 13px; padding: 9px; cursor: pointer;
+  font: 800 12.5px "Segoe UI", system-ui; color: #fff;
+  background: linear-gradient(135deg, #0f9d58, #1a73e8);
+  box-shadow: 0 4px 16px rgba(15,157,88,.35);
+}
+.apk-guard-pulse { animation: apk-pulse 1s infinite; }
+@keyframes apk-pulse { 50% { opacity: .35; } }
+
+/* ---------- toast ---------- */
+.apk-guard-toast {
+  position: fixed; right: 16px; bottom: 16px; z-index: 2147483647; max-width: 335px;
+  padding: 13px 15px; border-left: 5px solid #d93025;
+  opacity: 0; transform: translateY(14px); transition: all .3s;
+  font-size: 13px;
+}
+.apk-guard-toast.show { opacity: 1; transform: none; }
+.apk-guard-toast, .apk-guard-card, .apk-guard-panel, .apk-guard-raw {
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+.apk-guard-toast::-webkit-scrollbar, .apk-guard-card::-webkit-scrollbar,
+.apk-guard-panel::-webkit-scrollbar, .apk-guard-raw::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.apk-guard-toast-title { font-weight: 800; margin-bottom: 3px; }
+.apk-guard-toast-sub { color: #5f6368; margin-bottom: 9px; font-size: 12px; }
+.apk-guard-toast-actions { display: flex; gap: 8px; }
+
+/* ---------- verdict card ---------- */
+.apk-guard-card {
+  z-index: 2147483646; margin: 0; padding: 14px 16px; max-width: 580px;
+  font-size: 13px; line-height: 1.55;
+}
+.apk-guard-toast-card { position: fixed; right: 18px; bottom: 18px; width: min(380px, calc(100vw - 36px)); max-height: min(430px, calc(100vh - 36px)); overflow-y: auto; animation: apk-toast-in .28s ease-out; }
+@keyframes apk-toast-in { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+.apk-guard-card.apk-guard-red { border-left: 6px solid #d93025; }
+.apk-guard-card.apk-guard-green { border-left: 6px solid #0f9d58; }
+.apk-guard-card.apk-guard-amber { border-left: 6px solid #e8710a; }
+.apk-guard-card.apk-guard-loading { border-left: 6px solid #1a73e8; }
+.apk-guard-card-head { font-size: 14.5px; margin-bottom: 6px; }
+.apk-guard-toast-label { margin-left: 7px; color: #5f6b84; font-size: 11px; font-weight: 600; }
+.apk-guard-score { float: right; background: rgba(20,30,70,.08); border-radius: 999px;
+  padding: 2px 11px; font-size: 11px; font-weight: 800; }
+.apk-guard-x { float: right; margin-left: 6px; border: none; background: none; cursor: pointer;
+  color: #80868b; font-size: 14px; }
+.apk-guard-file { color: #5f6368; font-size: 12px; }
+.apk-guard-summary { margin: 8px 0; }
+.apk-guard-sec { font-weight: 800; margin-top: 9px; font-size: 12px; text-transform: uppercase;
+  letter-spacing: .4px; color: #3c4043; }
+.apk-guard-card ul { margin: 4px 0 4px 18px; padding: 0; }
+.apk-guard-meta { margin-top: 9px; font-size: 11px; color: #80868b; }
+.apk-guard-raw { background: rgba(20,30,70,.05); border: 1px solid rgba(20,30,70,.1); border-radius: 10px;
+  padding: 8px; max-height: 220px; overflow: auto; font-size: 11px; }
+.apk-guard-spinner { width: 24px; height: 24px; border: 3px solid rgba(26,115,232,.2);
+  border-top-color: #1a73e8; border-radius: 50%; animation: apkspin 0.8s linear infinite; margin: 10px 0; }
+@keyframes apkspin { to { transform: rotate(360deg); } }
+
+/* ---------- download-confirm modal ---------- */
+.apk-guard-overlay {
+  position: fixed; inset: 0; z-index: 2147483647;
+  background: rgba(12, 18, 38, 0.45);
+  -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  animation: apk-fade .2s;
+}
+@keyframes apk-fade { from { opacity: 0; } }
+.apk-guard-modal { max-width: 450px; width: 100%; padding: 22px 24px; animation: apk-pop .3s cubic-bezier(.2,.9,.3,1.25); }
+@keyframes apk-pop { from { opacity: 0; transform: scale(.92); } }
+.apk-guard-m-risk {
+  display: inline-block; font-size: 12px; font-weight: 800; border-radius: 999px; padding: 4px 14px;
+  background: rgba(255,255,255,.6); border: 1px solid rgba(255,255,255,.7); margin-bottom: 10px;
+}
+.apk-guard-m-risk.high { color: #b3261e; box-shadow: inset 3px 0 0 #d93025; }
+.apk-guard-m-risk.medium { color: #8a5400; box-shadow: inset 3px 0 0 #e8710a; }
+.apk-guard-m-risk.low { color: #146c2e; box-shadow: inset 3px 0 0 #0f9d58; }
+.apk-guard-modal h3 { margin: 0 0 4px; font-size: 16.5px; word-break: break-all; }
+.apk-guard-m-q { font-size: 13.5px; font-weight: 600; margin: 0 0 8px; }
+.apk-guard-modal ul { margin: 6px 0 4px 18px; padding: 0; font-size: 12.5px; color: #3c4043; }
+.apk-guard-m-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.apk-guard-m-actions button { flex: 1; min-width: 120px; border-radius: 13px; padding: 10px 8px;
+  font: 800 12.5px "Segoe UI", system-ui; cursor: pointer; border: none; transition: transform .12s; }
+.apk-guard-m-actions button:hover { transform: translateY(-1px); }
+.apk-guard-m-scan { background: linear-gradient(135deg,#1a73e8,#7b5cff); color: #fff;
+  box-shadow: 0 4px 16px rgba(60,80,220,.4); }
+.apk-guard-m-dl { background: linear-gradient(135deg,#d93025,#e8710a); color: #fff; }
+.apk-guard-m-cancel { background: rgba(20,30,70,.08); color: #3c4043; }
+.apk-guard-m-note { margin-top: 10px; font-size: 11px; color: #80868b; }
