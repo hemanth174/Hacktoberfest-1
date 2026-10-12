@@ -35,6 +35,8 @@ function handleScanProgress(message) {
   if (message.detail) setActivity(pending?.activityId || fallbackActivity, message.detail);
   if (message.status === "complete" && message.data) {
     saveHistory(message.data);
+    applyPageResult(message.data);
+    setActivity(pending?.activityId || fallbackActivity, "Gemma report ready.", "done");
     renderReport(message.data);
     openReport();
     pending?.resolve(true);
@@ -48,6 +50,15 @@ function handleScanProgress(message) {
   if (message.status === "complete" || message.status === "error") {
     if (pending?.pollTimer) clearInterval(pending.pollTimer);
   }
+}
+
+function applyPageResult(data) {
+  if (!data?.page_url) return;
+  const verdict = String(data.verdict || "unknown").toLowerCase();
+  const cls = verdict === "clean" ? "ok" : verdict === "unknown" ? "na" : "bad";
+  const label = verdict === "unknown" ? "Unable to verify" : verdict.charAt(0).toUpperCase() + verdict.slice(1);
+  $("pageStatus").innerHTML = statusRow(cls, `${label} · last scan`, data.summary || "Previous report restored.");
+  setActivity("pageActivity", "Gemma report ready.", "done");
 }
 
 function pollBackgroundJob(jobId) {
@@ -246,7 +257,7 @@ $("scanPageBtn").onclick = async () => {
   openPersistentScanPanel();
   btn.disabled = true;
   btn.innerHTML = `<span class="spinner dark"></span>Scanning page…`;
-  setActivity("pageActivity", "Collecting page text, Terms, Privacy information, and APK links…");
+    setActivity("pageActivity", "Collecting page text, Terms, Privacy information, and APK links…");
   try {
     const tab = await activeTab();
     setActivity("pageActivity", "Capturing the visible page for Gemma 4 vision…");
@@ -429,6 +440,13 @@ function saveHistory(data) {
   getHistory().then((h) => {
     h.unshift({ t: Date.now(), filename: data.filename || "download.apk", pageUrl: data.page_url || "", scanKind: data.scan_kind || "apk", verdict: data.verdict || "unknown", score: data.risk_score ?? null, source: data.source || "", model: data.model || "", data });
     chrome.storage.local.set({ apkGuardHistory: h.slice(0, 6) });
+    if (data.page_url && (data.scan_kind === "page" || !data.url)) {
+      chrome.storage.local.get({ apkGuardPageResults: {} }, (value) => {
+        const results = value.apkGuardPageResults || {};
+        results[data.page_url] = { t: Date.now(), data };
+        chrome.storage.local.set({ apkGuardPageResults: results });
+      });
+    }
     renderHistory();
   });
 }
@@ -598,8 +616,8 @@ async function refreshActivePage() {
   const tab = await activeTab();
   const key = `${tab?.id || ""}:${tab?.url || ""}`;
   if (key === lastAutoScanKey) return;
-  await loadPage();
   lastAutoScanKey = key;
+  await loadPage();
   const activeJob = await new Promise((resolve) => chrome.runtime.sendMessage({ type: "GET_ACTIVE_PAGE_JOB", pageUrl: tab?.url || "" }, (response) => resolve(response || { status: "none" })));
   if (activeJob.status && !["none", "complete", "error"].includes(activeJob.status)) {
     setActivity("pageActivity", activeJob.detail || "Resuming the active page scan…");

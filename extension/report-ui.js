@@ -116,6 +116,7 @@ window.ApkGuardUI = (() => {
   /* ---------- download-guard confirm modal ---------- */
   function showConfirmModal(info, actions) {
     closeModal();
+    const isWebApp = info.kind === "web-app-install";
     const riskWord = info.level === "high" ? "HIGH RISK" : info.level === "medium" ? "MEDIUM RISK" : "LOW RISK";
     const reasons = (info.reasons.length ? info.reasons : ["No heuristic red flags — still verify the source."])
       .map((r) => `<li>${escapeHtml(r)}</li>`).join("");
@@ -124,14 +125,14 @@ window.ApkGuardUI = (() => {
       <div class="apk-guard-modal apk-guard-glass">
         <span class="apk-guard-m-risk ${info.level}">${riskWord} · ${info.score}/100</span>
         <h3>${escapeHtml(info.fileName)}</h3>
-        <p class="apk-guard-m-q">Are you sure you want to download this APK file?</p>
+        <p class="apk-guard-m-q">${isWebApp ? "Are you sure you want to install this website as an app?" : "Are you sure you want to download this APK file?"}</p>
         <ul>${reasons}</ul>
         <div class="apk-guard-m-actions">
-          <button class="apk-guard-m-scan">Scan first</button>
-          <button class="apk-guard-m-dl">Download anyway</button>
+          <button class="apk-guard-m-scan">${isWebApp ? "Review site first" : "Scan first"}</button>
+          <button class="apk-guard-m-dl">${isWebApp ? "Proceed to install" : "Download anyway"}</button>
           <button class="apk-guard-m-cancel">Cancel</button>
         </div>
-        <div class="apk-guard-m-note">Scanning runs androguard + Gemma 4 analysis before anything touches your device.</div>
+        <div class="apk-guard-m-note">${isWebApp ? "This is a browser app install prompt. APK Guard can review the site, but it cannot scan a browser-managed app package here." : "Scanning runs androguard + Gemma 4 analysis before anything touches your device."}</div>
       </div>`;
     ov.addEventListener("mousedown", (e) => { if (e.target === ov) { closeModal(); actions.onCancel && actions.onCancel(); } });
     ov.querySelector(".apk-guard-m-scan").onclick = () => { closeModal(); actions.onScan && actions.onScan(); };

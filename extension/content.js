@@ -362,11 +362,12 @@
     if (t.dataset.apkGuardConfirmed) { delete t.dataset.apkGuardConfirmed; return null; }
     const href = t.getAttribute("href") || t.getAttribute("data-apk") || t.getAttribute("data-download-url") || t.dataset.apkGuardUrl || "";
     const text = (t.textContent || "").toLowerCase();
-    const isApk = /\.apk(\?.*)?$/i.test(href) || /\.apk/i.test(text) || /\b(download|download now|get apk|get app|install)\b/i.test(text) || t.hasAttribute("data-apk") || !!t.dataset.apkGuardUrl;
-    if (!isApk) return null;
+    const isApk = /\.apk(\?.*)?$/i.test(href) || /\.apk/i.test(text) || /\b(download|download now|get apk|get app)\b/i.test(text) || t.hasAttribute("data-apk") || !!t.dataset.apkGuardUrl;
+    const isWebAppInstall = !isApk && /\binstall\b/i.test(text) && /\b(app|page|desktop|computer|home screen)\b/i.test(text);
+    if (!isApk && !isWebAppInstall) return null;
     const url = t.dataset.apkGuardUrl || (href && !/^javascript:|^#$/i.test(href) ? (href.startsWith("http") ? href : new URL(href, location.href).href) : `${location.href}#apk-guard-click-target`);
-    const fileName = (t.dataset.apkGuardFile || url.split("/").pop() || t.textContent.trim().slice(0, 60) || "download.apk").split("?")[0];
-    return { el: t, url, fileName, resolvable: Boolean(href && !/^javascript:|^#$/i.test(href)) };
+    const fileName = isWebAppInstall ? "Website app install" : (t.dataset.apkGuardFile || url.split("/").pop() || t.textContent.trim().slice(0, 60) || "download.apk").split("?")[0];
+    return { el: t, url, fileName, kind: isWebAppInstall ? "web-app-install" : "apk", resolvable: Boolean(href && !/^javascript:|^#$/i.test(href)) };
   }
 
   document.addEventListener("click", (e) => {
@@ -379,10 +380,12 @@
       e.stopPropagation();
       const { score, reasons } = getHeuristic(hit.url, hit.fileName, location.hostname);
       if (!hit.resolvable) reasons.unshift("This button redirects or generates the final APK URL dynamically");
-      ApkGuardUI.showConfirmModal(
-        { fileName: hit.fileName, url: hit.url, score, level: riskLevel(score), reasons },
-        {
-          onScan: () => fullScan(hit.url, hit.fileName, hit.el),
+       ApkGuardUI.showConfirmModal(
+         { fileName: hit.fileName, url: hit.url, kind: hit.kind, score, level: riskLevel(score), reasons },
+         {
+           onScan: () => hit.kind === "web-app-install"
+             ? chrome.runtime.sendMessage({ type: "OPEN_PANEL", tabId: null }).catch(() => {})
+             : fullScan(hit.url, hit.fileName, hit.el),
           onDownload: () => {
             hit.el.dataset.apkGuardConfirmed = "1";
             if (hit.el.tagName === "A" && hit.el.getAttribute("href")) hit.el.click();
